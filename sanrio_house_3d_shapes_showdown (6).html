@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sanrio 之家：立體圖形大對決</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        body {
+            font-family: 'Fredoka', 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #FFF0F5 0%, #E6E6FA 50%, #E0F7FA 100%);
+            overflow: hidden;
+        }
+        
+        /* Sanrio Pastel Color Classes */
+        .cute-card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(8px);
+            border: 3px solid #FFF;
+            box-shadow: 0 10px 25px -5px rgba(255, 182, 197, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            border-radius: 1.25rem;
+        }
+
+        /* Option Button Styles */
+        .option-btn {
+            transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+        }
+        .option-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.12);
+        }
+        .option-btn:active {
+            transform: scale(0.96);
+        }
+
+        /* Animations */
+        @keyframes bounce-gentle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-bounce-gentle {
+            animation: bounce-gentle 2s infinite ease-in-out;
+        }
+
+        @keyframes pop-success {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: pop-success 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes shake-error {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .animate-shake {
+            animation: shake-error 0.4s ease-in-out;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #FFB7C5;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between p-2 md:p-3 text-gray-700 select-none">
+
+    <!-- Navigation Header -->
+    <header class="flex justify-between items-center bg-white/85 backdrop-blur-md px-4 py-2 rounded-2xl shadow-sm border-2 border-pink-200 z-10">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center text-pink-500 text-xl font-bold border border-pink-300">
+                <i class="fa-solid fa-shapes"></i>
+            </div>
+            <div>
+                <h1 class="text-base sm:text-xl font-black text-pink-600 tracking-wide">Sanrio 之家：立體圖形大對決</h1>
+                <p class="text-xs text-gray-500 hidden sm:block">香港小二數學課程：點選配對模式（四角柱、三角柱、圓柱、錐體、球體）</p>
+            </div>
+        </div>
+
+        <!-- Timer & Controls -->
+        <div class="flex items-center gap-2 sm:gap-4">
+            <div class="bg-gradient-to-r from-pink-500 to-rose-400 text-white px-4 py-1 rounded-full shadow-inner flex items-center gap-2 font-black text-lg">
+                <i class="fa-solid fa-clock animate-pulse"></i>
+                <span id="timer-display">120</span>s
+            </div>
+            <button onclick="toggleFullScreen()" class="bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-1.5 rounded-xl font-bold text-xs sm:text-sm transition flex items-center gap-1 border border-purple-200">
+                <i class="fa-solid fa-expand"></i> <span class="hidden sm:inline">全屏遊玩</span>
+            </button>
+            <button onclick="restartGame()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-xl font-bold text-xs sm:text-sm transition border border-gray-300">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Battle Arena (Split Screen) -->
+    <main class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 my-2 relative overflow-hidden">
+        
+        <!-- Center Divider for Desktop Split Screen -->
+        <div class="hidden md:block absolute left-1/2 top-4 bottom-4 w-1 bg-gradient-to-b from-pink-300 via-purple-300 to-blue-300 rounded-full transform -translate-x-1/2 opacity-60 z-0"></div>
+
+        <!-- PLAYER 1 ARENA (LEFT) -->
+        <section id="p1-arena" class="cute-card border-pink-300 bg-pink-50/40 p-3 flex flex-col justify-between relative overflow-hidden">
+            <!-- P1 Header Info -->
+            <div class="flex justify-between items-center pb-2 border-b border-pink-200">
+                <div class="flex items-center gap-2">
+                    <span class="bg-pink-400 text-white px-3 py-1 rounded-full text-xs font-black shadow-sm">P1 玩家 1</span>
+                    <span id="p1-combo" class="text-xs font-bold text-pink-600 hidden animate-bounce"><i class="fa-solid fa-fire text-amber-500"></i> <span id="p1-combo-count">0</span>連勝!</span>
+                </div>
+                <div class="text-pink-600 font-black text-xl">得分: <span id="p1-score" class="text-2xl">0</span></div>
+            </div>
+
+            <!-- P1 Question Prompt Area -->
+            <div class="flex-1 flex flex-col items-center justify-center p-2">
+                <div class="text-xs font-bold text-pink-500 mb-1 flex items-center gap-1">
+                    <i class="fa-solid fa-circle-question"></i> 這是甚麼立體圖形？（點擊正確答案）
+                </div>
+                <div id="p1-card-container" class="w-full max-w-xs h-36 sm:h-40 bg-white rounded-2xl border-2 border-pink-200 shadow-inner flex flex-col items-center justify-center p-3 text-center transition-all duration-300">
+                    <!-- Dynamic Question Item Injected Here -->
+                </div>
+            </div>
+
+            <!-- P1 Dynamic 4-Choice Options Grid -->
+            <div id="p1-options" class="grid grid-cols-2 gap-2.5 pt-2 border-t border-pink-200">
+                <!-- 4 Options generated dynamically -->
+            </div>
+            
+            <!-- P1 Celebration Overlay -->
+            <div id="p1-celebrate" class="absolute inset-0 bg-pink-500/20 backdrop-blur-xs flex flex-col items-center justify-center pointer-events-none opacity-0 transition-opacity duration-300 z-20">
+                <div class="text-4xl">🎉✨</div>
+                <div class="text-pink-600 font-black text-2xl drop-shadow-md">連勝 Bonus +50!</div>
+            </div>
+        </section>
+
+
+        <!-- PLAYER 2 ARENA (RIGHT) -->
+        <section id="p2-arena" class="cute-card border-blue-300 bg-blue-50/40 p-3 flex flex-col justify-between relative overflow-hidden">
+            <!-- P2 Header Info -->
+            <div class="flex justify-between items-center pb-2 border-b border-blue-200">
+                <div class="flex items-center gap-2">
+                    <span class="bg-sky-400 text-white px-3 py-1 rounded-full text-xs font-black shadow-sm">P2 玩家 2</span>
+                    <span id="p2-combo" class="text-xs font-bold text-sky-600 hidden animate-bounce"><i class="fa-solid fa-fire text-amber-500"></i> <span id="p2-combo-count">0</span>連勝!</span>
+                </div>
+                <div class="text-sky-600 font-black text-xl">得分: <span id="p2-score" class="text-2xl">0</span></div>
+            </div>
+
+            <!-- P2 Question Prompt Area -->
+            <div class="flex-1 flex flex-col items-center justify-center p-2">
+                <div class="text-xs font-bold text-sky-500 mb-1 flex items-center gap-1">
+                    <i class="fa-solid fa-circle-question"></i> 這是甚麼立體圖形？（點擊正確答案）
+                </div>
+                <div id="p2-card-container" class="w-full max-w-xs h-36 sm:h-40 bg-white rounded-2xl border-2 border-sky-200 shadow-inner flex flex-col items-center justify-center p-3 text-center transition-all duration-300">
+                    <!-- Dynamic Question Item Injected Here -->
+                </div>
+            </div>
+
+            <!-- P2 Dynamic 4-Choice Options Grid -->
+            <div id="p2-options" class="grid grid-cols-2 gap-2.5 pt-2 border-t border-blue-200">
+                <!-- 4 Options generated dynamically -->
+            </div>
+
+            <!-- P2 Celebration Overlay -->
+            <div id="p2-celebrate" class="absolute inset-0 bg-sky-500/20 backdrop-blur-xs flex flex-col items-center justify-center pointer-events-none opacity-0 transition-opacity duration-300 z-20">
+                <div class="text-4xl">🌟🌸</div>
+                <div class="text-sky-600 font-black text-2xl drop-shadow-md">連勝 Bonus +50!</div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Start Game Modal Overlay -->
+    <div id="start-modal" class="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4">
+        <div class="cute-card max-w-md w-full p-6 text-center bg-white border-4 border-pink-300 space-y-4">
+            <div class="w-20 h-20 bg-pink-100 rounded-full flex items-center justify-center text-pink-500 text-4xl mx-auto shadow-inner animate-bounce-gentle">
+                <i class="fa-solid fa-cubes"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl font-black text-pink-600">Sanrio 之家：立體圖形大對決</h2>
+                <p class="text-xs text-gray-500 mt-1">香港小二數學科課程專稱版（點選配對模式）</p>
+            </div>
+            
+            <div class="bg-pink-50 p-3.5 rounded-xl border border-pink-200 text-left text-xs text-gray-600 space-y-2 leading-relaxed">
+                <div class="font-bold text-pink-700 flex items-center gap-1">
+                    <i class="fa-solid fa-circle-info"></i> 遊戲說明與規範：
+                </div>
+                <p>1. <b>香港小二課程專稱</b>：採用「四角柱」、「三角柱」、「圓柱」、「圓錐」、「角錐」、「球體」等用語。</p>
+                <p>2. <b>清晰底面標示</b>：立體圖形底面與隱藏邊均以虛線標記，幫助清晰辨識圖形結構。</p>
+                <p>3. <b>雙人限時對決</b>：限時 <b>120 秒</b>，答對 +100 分，答錯 -10 分，連續答對 3 題引發 Bonus 連勝獎勵！</p>
+            </div>
+
+            <div class="flex flex-col gap-2 pt-1">
+                <button onclick="startGame(true)" class="w-full bg-gradient-to-r from-pink-500 to-rose-400 hover:from-pink-600 hover:to-rose-500 text-white font-black py-3 rounded-2xl text-lg shadow-lg hover:shadow-pink-300 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-expand"></i> 全屏進入對決
+                </button>
+                <button onclick="startGame(false)" class="w-full bg-pink-100 hover:bg-pink-200 text-pink-700 font-bold py-2.5 rounded-2xl text-sm transition">
+                    視窗模式開始
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Modal Overlay -->
+    <div id="gameover-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 hidden">
+        <div class="cute-card max-w-lg w-full p-6 text-center bg-white border-4 border-purple-300 space-y-5 animate-pop">
+            <div class="text-5xl" id="winner-emoji">🏆</div>
+            <div>
+                <h2 id="winner-title" class="text-3xl font-black text-purple-600">P1 獲勝！</h2>
+                <p class="text-sm text-gray-500 mt-1">立體圖形配對大師誕生！</p>
+            </div>
+
+            <!-- Score Comparison -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-pink-50 p-4 rounded-2xl border-2 border-pink-200">
+                    <div class="text-xs font-bold text-pink-500">P1 玩家 1</div>
+                    <div id="final-p1-score" class="text-3xl font-black text-pink-600 mt-1">0</div>
+                </div>
+                <div class="bg-sky-50 p-4 rounded-2xl border-2 border-sky-200">
+                    <div class="text-xs font-bold text-sky-500">P2 玩家 2</div>
+                    <div id="final-p2-score" class="text-3xl font-black text-sky-600 mt-1">0</div>
+                </div>
+            </div>
+
+            <button onclick="restartGame()" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-black py-3 rounded-2xl text-lg shadow-lg transition hover:scale-105">
+                <i class="fa-solid fa-rotate-right"></i> 再玩一局
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Full Pool of standard HK P.2 shape option names
+        const ALL_SHAPE_NAMES = [
+            '四角柱',
+            '三角柱',
+            '五角柱',
+            '六角柱',
+            '圓柱',
+            '圓錐',
+            '三角錐',
+            '四角錐',
+            '五角錐',
+            '球體'
+        ];
+
+        // Pure 3D Vectors & Real World Sanrio Vectors
+        const SVGS = {
+            // Real-world Objects
+            'magic_cube': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(5, 5)">
+                    <polygon points="45,5 80,20 45,35 10,20" fill="#FFB7B2" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <line x1="21.6" y1="15" x2="56.6" y2="30" stroke="#334155" stroke-width="1.5"/>
+                    <line x1="33.3" y1="10" x2="68.3" y2="25" stroke="#334155" stroke-width="1.5"/>
+                    <polygon points="10,20 45,35 45,75 10,60" fill="#FFDAC1" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <line x1="21.6" y1="25" x2="21.6" y2="65" stroke="#334155" stroke-width="1.5"/>
+                    <line x1="33.3" y1="30" x2="33.3" y2="70" stroke="#334155" stroke-width="1.5"/>
+                    <polygon points="45,35 80,20 80,60 45,75" fill="#E2F0CB" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <line x1="56.6" y1="30" x2="56.6" y2="70" stroke="#334155" stroke-width="1.5"/>
+                    <line x1="68.3" y1="25" x2="68.3" y2="65" stroke="#334155" stroke-width="1.5"/>
+                </g>
+            </svg>`,
+
+            'dice': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(5, 5)">
+                    <polygon points="45,8 80,22 45,36 10,22" fill="#FFF0F5" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="10,22 45,36 45,76 10,62" fill="#FFD1DC" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="45,36 80,22 80,62 45,76" fill="#F4C2C2" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <circle cx="45" cy="22" r="4" fill="#FF4D6D"/>
+                    <circle cx="23" cy="43" r="3" fill="#334155"/>
+                    <circle cx="23" cy="55" r="3" fill="#334155"/>
+                    <circle cx="67" cy="43" r="3" fill="#334155"/>
+                    <circle cx="67" cy="55" r="3" fill="#334155"/>
+                    <circle cx="50" cy="49" r="3" fill="#334155"/>
+                </g>
+            </svg>`,
+
+            'gift_box': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(5, 5)">
+                    <polygon points="45,10 80,24 45,38 10,24" fill="#E1BEE7" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="10,24 45,38 45,76 10,62" fill="#CE93D8" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="45,38 80,24 80,62 45,76" fill="#AB47BC" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <path d="M 27.5 17 L 27.5 69 M 62.5 17 L 62.5 69 M 27.5 31 L 62.5 31" fill="none" stroke="#FFD54F" stroke-width="4"/>
+                    <circle cx="45" cy="24" r="5" fill="#FFCA28" stroke="#334155" stroke-width="1.5"/>
+                </g>
+            </svg>`,
+
+            'tissue_box': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(0, 5)">
+                    <path d="M 42 22 C 38 8, 48 2, 54 12 C 58 2, 68 8, 62 22 Z" fill="#FFFFFF" stroke="#64748B" stroke-width="1.5"/>
+                    <polygon points="18,24 68,18 88,36 38,42" fill="#B5EAD7" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <ellipse cx="53" cy="30" rx="14" ry="5" fill="#79D2B5" opacity="0.7"/>
+                    <polygon points="38,42 88,36 88,72 38,78" fill="#C7CEEA" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="18,24 38,42 38,78 18,60" fill="#957DAD" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                </g>
+            </svg>`,
+
+            'milk_carton': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(10, 2)">
+                    <polygon points="20,25 40,10 60,25 40,30" fill="#81D4FA" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="40,10 60,25 60,20 40,5" fill="#4FC3F7" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="20,25 60,25 60,82 20,82" fill="#E0F7FA" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="60,25 80,18 80,72 60,82" fill="#B2EBF2" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <text x="40" y="58" font-size="12" text-anchor="middle" fill="#0288D1" font-weight="900">MILK</text>
+                </g>
+            </svg>`,
+
+            'book': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(5, 10)">
+                    <polygon points="15,20 75,12 88,28 28,36" fill="#FF85A1" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="28,36 88,28 88,68 28,76" fill="#FFF" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="15,20 28,36 28,76 15,60" fill="#FF477E" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <line x1="84" y1="30" x2="84" y2="70" stroke="#CBD5E1" stroke-width="2"/>
+                </g>
+            </svg>`,
+
+            'tea_tin': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(5, 5)">
+                    <path d="M25 30 L25 75 A 25 10 0 0 0 75 75 L75 30 Z" fill="url(#teaGrad)" stroke="#334155" stroke-width="2"/>
+                    <ellipse cx="50" cy="30" rx="25" ry="10" fill="#FFDAC1" stroke="#334155" stroke-width="2"/>
+                    <rect x="32" y="42" width="36" height="22" rx="4" fill="#FFFFFF" stroke="#FF9AA2" stroke-width="1.5"/>
+                    <text x="50" y="57" font-size="11" text-anchor="middle" fill="#FF85A1" font-weight="bold">TEA</text>
+                </g>
+                <defs>
+                    <linearGradient id="teaGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#E2F0CB"/>
+                        <stop offset="50%" stop-color="#B5EAD7"/>
+                        <stop offset="100%" stop-color="#80C6A7"/>
+                    </linearGradient>
+                </defs>
+            </svg>`,
+
+            'chip_can': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(15, 2)">
+                    <path d="M15 25 L15 82 A 20 8 0 0 0 55 82 L55 25 Z" fill="#FF7043" stroke="#334155" stroke-width="2"/>
+                    <ellipse cx="35" cy="25" rx="20" ry="8" fill="#FFE082" stroke="#334155" stroke-width="2"/>
+                    <circle cx="35" cy="52" r="10" fill="#FFF"/>
+                    <text x="35" y="56" font-size="10" text-anchor="middle" fill="#E65100" font-weight="bold">CHIP</text>
+                </g>
+            </svg>`,
+
+            'soda_can': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(15, 5)">
+                    <path d="M15 22 L15 78 A 20 8 0 0 0 55 78 L55 22 Z" fill="#EF5350" stroke="#334155" stroke-width="2"/>
+                    <ellipse cx="35" cy="22" rx="20" ry="8" fill="#B0BEC5" stroke="#334155" stroke-width="2"/>
+                    <ellipse cx="35" cy="22" rx="13" ry="5" fill="#CFD8DC"/>
+                </g>
+            </svg>`,
+
+            'party_hat': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(0, 2)">
+                    <path d="M 20 78 A 30 12 0 0 0 80 78 L 50 15 Z" fill="url(#hatGrad)" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <path d="M 20 78 A 30 12 0 0 0 80 78" fill="none" stroke="#334155" stroke-width="2"/>
+                    <circle cx="50" cy="13" r="7" fill="#FF9AA2" stroke="#334155" stroke-width="1.5"/>
+                </g>
+                <defs>
+                    <linearGradient id="hatGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#FFB7B2"/>
+                        <stop offset="100%" stop-color="#FFDAC1"/>
+                    </linearGradient>
+                </defs>
+            </svg>`,
+
+            'ice_cream_cone': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(5, 0)">
+                    <polygon points="50,90 25,45 75,45" fill="#D7CCC8" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <path d="M 25 45 C 20 20, 80 20, 75 45 Z" fill="#FF80AB" stroke="#334155" stroke-width="2"/>
+                    <circle cx="50" cy="25" r="5" fill="#FF1744"/>
+                </g>
+            </svg>`,
+
+            'yarn': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(0, 0)">
+                    <circle cx="50" cy="50" r="34" fill="url(#yarnGrad)" stroke="#334155" stroke-width="2"/>
+                    <path d="M22 42 C 40 22, 60 22, 78 42" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.8"/>
+                    <path d="M20 52 C 40 70, 60 70, 80 52" fill="none" stroke="#FF6584" stroke-width="2" opacity="0.6"/>
+                </g>
+                <defs>
+                    <radialGradient id="yarnGrad" cx="35%" cy="35%" r="65%">
+                        <stop offset="0%" stop-color="#FFC6FF"/>
+                        <stop offset="60%" stop-color="#FF85A1"/>
+                        <stop offset="100%" stop-color="#D04880"/>
+                    </radialGradient>
+                </defs>
+            </svg>`,
+
+            'watermelon': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(0, 0)">
+                    <circle cx="50" cy="50" r="35" fill="#66BB6A" stroke="#334155" stroke-width="2"/>
+                    <path d="M 30 20 Q 35 50 30 80 M 50 15 Q 55 50 50 85 M 70 20 Q 65 50 70 80" fill="none" stroke="#2E7D32" stroke-width="4" stroke-linecap="round"/>
+                </g>
+            </svg>`,
+
+            'crystal_ball': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(0, 0)">
+                    <path d="M 30 75 L 70 75 L 75 90 L 25 90 Z" fill="#B0BEC5" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <circle cx="50" cy="45" r="32" fill="url(#crysGrad)" stroke="#334155" stroke-width="2"/>
+                    <ellipse cx="40" cy="32" rx="8" ry="5" fill="#FFF" opacity="0.7" transform="rotate(-20 40 32)"/>
+                </g>
+                <defs>
+                    <radialGradient id="crysGrad" cx="40%" cy="40%" r="60%">
+                        <stop offset="0%" stop-color="#E1F5FE"/>
+                        <stop offset="70%" stop-color="#81D4FA"/>
+                        <stop offset="100%" stop-color="#0288D1"/>
+                    </radialGradient>
+                </defs>
+            </svg>`,
+
+            'tent': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(2, 5)">
+                    <polygon points="15,75 45,20 75,75" fill="#CAFFBF" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="45,20 75,75 92,60 62,10" fill="#9BF6FF" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="33,75 45,42 57,75" fill="#FDFFB6" stroke="#334155" stroke-width="1.5"/>
+                    <!-- Bottom Dashed Line -->
+                    <line x1="15" y1="75" x2="33" y2="60" stroke="#334155" stroke-width="1.5" stroke-dasharray="3 3"/>
+                    <line x1="33" y1="60" x2="62" y2="10" stroke="#334155" stroke-width="1.5" stroke-dasharray="3 3"/>
+                </g>
+            </svg>`,
+
+            'sandwich': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(5, 5)">
+                    <polygon points="15,70 55,20 85,70" fill="#FFE082" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="55,20 85,70 95,55 65,10" fill="#FFCA28" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <path d="M 17 68 Q 50 62 83 68" stroke="#81C784" stroke-width="5"/>
+                </g>
+            </svg>`,
+
+            'pencil': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(5, 5)">
+                    <polygon points="15,35 45,15 75,35" fill="#FFB7B2" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="15,35 45,15 45,80 15,85" fill="#FFDAC1" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="45,15 75,35 75,85 45,80" fill="#E2F0CB" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                </g>
+            </svg>`,
+
+            'pyramid_toy': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(5, 5)">
+                    <polygon points="45,10 10,60 45,85" fill="#E8DFF5" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="45,10 45,85 80,60" fill="#FCF4DD" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="10,60 45,85 80,60" fill="#FCE1E4" stroke="#334155" stroke-width="2" stroke-linejoin="round" opacity="0.4"/>
+                    <!-- Dashed lines showing bottom square base -->
+                    <path d="M 10 60 L 45 35 L 80 60 M 45 10 L 45 35" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="3 3"/>
+                </g>
+            </svg>`,
+
+            'zongzi': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(5, 5)">
+                    <polygon points="45,15 15,70 55,85" fill="#81C784" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="45,15 55,85 85,60" fill="#4CAF50" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <line x1="25" y1="50" x2="70" y2="52" stroke="#FFF7C2" stroke-width="3"/>
+                    <!-- Dashed hidden back edge for triangular base -->
+                    <line x1="15" y1="70" x2="85" y2="60" stroke="#334155" stroke-width="1.5" stroke-dasharray="3 3"/>
+                </g>
+            </svg>`,
+
+            // Solid Pure 3D Geometries with Dashed Base Lines
+            'pure_cuboid_cube': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(5, 5)">
+                    <polygon points="35,45 75,45 55,25 15,25" fill="#FFC6FF" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="35,45 75,45 75,85 35,85" fill="#FF85A1" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="75,45 55,25 55,65 75,85" fill="#D04880" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <!-- Dashed lines showing bottom quadrangular base and hidden edge -->
+                    <path d="M 35 85 L 15 65 L 15 25 M 15 65 L 55 65" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="3 3"/>
+                </g>
+            </svg>`,
+
+            'pure_cuboid_long': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(2, 8)">
+                    <polygon points="30,43 85,43 65,25 10,25" fill="#FFDAC1" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="30,43 85,43 85,78 30,78" fill="#FFB7B2" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="85,43 65,25 65,60 85,78" fill="#E07A5F" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <!-- Dashed lines showing bottom quadrangular base and hidden edge -->
+                    <path d="M 30 78 L 10 60 L 10 25 M 10 60 L 65 60" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="3 3"/>
+                </g>
+            </svg>`,
+
+            'pure_cylinder': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(10, 5)">
+                    <path d="M10 25 L10 70 A 30 12 0 0 0 70 70 L70 25 Z" fill="url(#cylGradPure)" stroke="none"/>
+                    <line x1="10" y1="25" x2="10" y2="70" stroke="#334155" stroke-width="2"/>
+                    <line x1="70" y1="25" x2="70" y2="70" stroke="#334155" stroke-width="2"/>
+                    <path d="M10 70 A 30 12 0 0 0 70 70" fill="none" stroke="#334155" stroke-width="2"/>
+                    <!-- Dashed back arc showing full circular base at bottom -->
+                    <path d="M10 70 A 30 12 0 0 1 70 70" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="3 3"/>
+                    <ellipse cx="40" cy="25" rx="30" ry="12" fill="#FFF3B0" stroke="#334155" stroke-width="2"/>
+                </g>
+                <defs>
+                    <linearGradient id="cylGradPure" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#FFE169"/>
+                        <stop offset="50%" stop-color="#FFF3B0"/>
+                        <stop offset="100%" stop-color="#E2C044"/>
+                    </linearGradient>
+                </defs>
+            </svg>`,
+
+            'pure_cone': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(10, 5)">
+                    <path d="M10 75 L40 15 L70 75 A 30 12 0 0 1 10 75 Z" fill="url(#coneGradPure)"/>
+                    <line x1="10" y1="75" x2="40" y2="15" stroke="#334155" stroke-width="2"/>
+                    <line x1="70" y1="75" x2="40" y2="15" stroke="#334155" stroke-width="2"/>
+                    <path d="M10 75 A 30 12 0 0 0 70 75" fill="none" stroke="#334155" stroke-width="2"/>
+                    <!-- Dashed back arc showing circular base at bottom -->
+                    <path d="M10 75 A 30 12 0 0 1 70 75" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="3 3"/>
+                </g>
+                <defs>
+                    <linearGradient id="coneGradPure" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#6EE7B7"/>
+                        <stop offset="50%" stop-color="#A7F3D0"/>
+                        <stop offset="100%" stop-color="#047857"/>
+                    </linearGradient>
+                </defs>
+            </svg>`,
+
+            'pure_sphere': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(0, 0)">
+                    <circle cx="50" cy="50" r="36" fill="url(#sphGradPure)" stroke="#334155" stroke-width="2"/>
+                    <ellipse cx="38" cy="36" rx="10" ry="6" fill="#FFFFFF" opacity="0.6" transform="rotate(-20 38 36)"/>
+                </g>
+                <defs>
+                    <radialGradient id="sphGradPure" cx="35%" cy="35%" r="65%">
+                        <stop offset="0%" stop-color="#BFDBFE"/>
+                        <stop offset="50%" stop-color="#60A5FA"/>
+                        <stop offset="100%" stop-color="#1D4ED8"/>
+                    </radialGradient>
+                </defs>
+            </svg>`,
+
+            'pure_triangular_prism': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(5, 5)">
+                    <polygon points="20,35 55,45 80,20" fill="#C7D2FE" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="20,35 55,45 55,85 20,75" fill="#A5B4FC" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="55,45 80,20 80,60 55,85" fill="#6366F1" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <!-- Dashed lines showing bottom triangular base and back hidden edge -->
+                    <path d="M 20 75 L 45 50 L 80 60 M 45 50 L 45 10" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="3 3"/>
+                </g>
+            </svg>`,
+
+            'pure_square_pyramid': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(5, 5)">
+                    <polygon points="45,15 15,65 45,85" fill="#E9D5FF" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="45,15 45,85 80,65" fill="#C084FC" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polyline points="15,65 45,85 80,65" fill="none" stroke="#334155" stroke-width="2"/>
+                    <!-- Dashed lines showing bottom quadrangular base and back edge -->
+                    <path d="M 15 65 L 50 45 L 80 65 M 45 15 L 50 45" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="3 3"/>
+                </g>
+            </svg>`,
+
+            'pure_triangular_pyramid': `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-md">
+                <g transform="translate(5, 5)">
+                    <polygon points="45,15 15,70 50,85" fill="#FED7AA" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="45,15 50,85 80,65" fill="#FB923C" stroke="#334155" stroke-width="2" stroke-linejoin="round"/>
+                    <polyline points="15,70 50,85 80,65" fill="none" stroke="#334155" stroke-width="2"/>
+                    <!-- Dashed line showing bottom triangular base hidden back edge -->
+                    <line x1="15" y1="70" x2="80" y2="65" stroke="#334155" stroke-width="1.5" stroke-dasharray="3 3"/>
+                </g>
+            </svg>`
+        };
+
+        // Dynamic Question Database adhering strictly to HK P.2 Math Terminology
+        const QUESTION_POOL = [
+            // Household Visual Objects
+            { id: 1, shapeName: '四角柱', type: 'svg', svgKey: 'magic_cube', title: '魔方' },
+            { id: 2, shapeName: '四角柱', type: 'svg', svgKey: 'dice', title: '骰子' },
+            { id: 3, shapeName: '四角柱', type: 'svg', svgKey: 'gift_box', title: '禮物盒' },
+            { id: 4, shapeName: '四角柱', type: 'svg', svgKey: 'tissue_box', title: '紙巾盒' },
+            { id: 5, shapeName: '四角柱', type: 'svg', svgKey: 'milk_carton', title: '鮮奶盒' },
+            { id: 6, shapeName: '四角柱', type: 'svg', svgKey: 'book', title: '故事書' },
+            { id: 7, shapeName: '圓柱', type: 'svg', svgKey: 'tea_tin', title: '茶葉罐' },
+            { id: 8, shapeName: '圓柱', type: 'svg', svgKey: 'chip_can', title: '薯片罐' },
+            { id: 9, shapeName: '圓柱', type: 'svg', svgKey: 'soda_can', title: '汽水罐' },
+            { id: 10, shapeName: '圓錐', type: 'svg', svgKey: 'party_hat', title: '派對帽' },
+            { id: 11, shapeName: '圓錐', type: 'svg', svgKey: 'ice_cream_cone', title: '雪糕筒' },
+            { id: 12, shapeName: '球體', type: 'svg', svgKey: 'yarn', title: '毛線球' },
+            { id: 13, shapeName: '球體', type: 'svg', svgKey: 'watermelon', title: '西瓜' },
+            { id: 14, shapeName: '球體', type: 'svg', svgKey: 'crystal_ball', title: '水晶球' },
+            { id: 15, shapeName: '三角柱', type: 'svg', svgKey: 'tent', title: '野營帳篷' },
+            { id: 16, shapeName: '三角柱', type: 'svg', svgKey: 'sandwich', title: '三文治' },
+            { id: 17, shapeName: '三角柱', type: 'svg', svgKey: 'pencil', title: '鉛筆' },
+            { id: 18, shapeName: '四角錐', type: 'svg', svgKey: 'pyramid_toy', title: '金字塔積木' },
+            { id: 19, shapeName: '三角錐', type: 'svg', svgKey: 'zongzi', title: '糉子' },
+
+            // Pure Solid 3D Shapes with Dashed Base Lines
+            { id: 20, shapeName: '四角柱', type: 'svg', svgKey: 'pure_cuboid_cube', title: '' },
+            { id: 21, shapeName: '四角柱', type: 'svg', svgKey: 'pure_cuboid_long', title: '' },
+            { id: 22, shapeName: '圓柱', type: 'svg', svgKey: 'pure_cylinder', title: '' },
+            { id: 23, shapeName: '圓錐', type: 'svg', svgKey: 'pure_cone', title: '' },
+            { id: 24, shapeName: '球體', type: 'svg', svgKey: 'pure_sphere', title: '' },
+            { id: 25, shapeName: '三角柱', type: 'svg', svgKey: 'pure_triangular_prism', title: '' },
+            { id: 26, shapeName: '四角錐', type: 'svg', svgKey: 'pure_square_pyramid', title: '' },
+            { id: 27, shapeName: '三角錐', type: 'svg', svgKey: 'pure_triangular_pyramid', title: '' },
+
+            // Mathematical Geometric Property Descriptions
+            { id: 28, shapeName: '四角柱', type: 'text', text: '有 6 個平平的面，側面都是長方形，底面是四邊形。' },
+            { id: 29, shapeName: '圓柱', type: 'text', text: '有 2 個平平的圓形底面和 1 個曲面。' },
+            { id: 30, shapeName: '圓錐', type: 'text', text: '有 1 個平平的圓形底面，頂端有 1 個尖頂。' },
+            { id: 31, shapeName: '球體', type: 'text', text: '只有 1 個彎曲的面，可以向任何方向滾動。' },
+            { id: 32, shapeName: '三角柱', type: 'text', text: '上下兩個底面是相同的三角形，側面都是長方形。' },
+            { id: 33, shapeName: '四角錐', type: 'text', text: '底面是四邊形，側面都是 4 個三角形，並交會於一點。' },
+            { id: 34, shapeName: '三角錐', type: 'text', text: '底面是三角形，側面都是 3 個三角形，並交會於一點。' },
+            { id: 35, shapeName: '圓柱', type: 'text', text: '上下兩個底面都是大小相同的圓形。' },
+            { id: 36, shapeName: '球體', type: 'text', text: '無論從哪個方向看，它的外形都是圓圓的。' }
+        ];
+
+        let gameState = {
+            timer: 120,
+            interval: null,
+            isPlaying: false,
+            p1: { score: 0, combo: 0, currentQ: null, deck: [] },
+            p2: { score: 0, combo: 0, currentQ: null, deck: [] }
+        };
+
+        // Web Audio Synthesizer for Audio Feedback
+        const playSound = (type) => {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.2); // A5
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.25);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, ctx.currentTime);
+                    osc.frequency.setValueAtTime(160, ctx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.3);
+                } else if (type === 'bonus') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(1046.5, ctx.currentTime + 0.4);
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.45);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.45);
+                }
+            } catch (e) {}
+        };
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {});
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        function shuffle(array) {
+            let arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // Load Next Question and Generate 4 Options
+        function nextQuestion(player) {
+            if (gameState[player].deck.length === 0) {
+                gameState[player].deck = shuffle(QUESTION_POOL);
+            }
+            const q = gameState[player].deck.pop();
+            gameState[player].currentQ = q;
+
+            // Render Prompt Area
+            const container = document.getElementById(`${player}-card-container`);
+            container.classList.remove('animate-shake');
+            
+            let htmlContent = '';
+            if (q.type === 'svg') {
+                htmlContent = `
+                    <div class="mb-1">${SVGS[q.svgKey]}</div>
+                    ${q.title ? `<div class="text-xs font-bold text-gray-500">${q.title}</div>` : ''}
+                `;
+            } else {
+                htmlContent = `
+                    <div class="text-xs sm:text-sm font-bold text-gray-700 leading-relaxed px-2 flex items-center justify-center h-full">
+                        "${q.text}"
+                    </div>
+                `;
+            }
+            container.innerHTML = htmlContent;
+
+            // Generate 4 Options (1 correct + 3 distractors)
+            const correctAnswer = q.shapeName;
+            const distractors = ALL_SHAPE_NAMES.filter(name => name !== correctAnswer);
+            const shuffledDistractors = shuffle(distractors).slice(0, 3);
+            const options = shuffle([correctAnswer, ...shuffledDistractors]);
+
+            // Render Options Buttons
+            const optionsContainer = document.getElementById(`${player}-options`);
+            optionsContainer.innerHTML = '';
+
+            const btnTheme = player === 'p1' 
+                ? 'bg-white hover:bg-pink-100 border-pink-300 text-pink-700' 
+                : 'bg-white hover:bg-sky-100 border-sky-300 text-sky-700';
+
+            options.forEach(optName => {
+                const btn = document.createElement('button');
+                btn.className = `option-btn ${btnTheme} border-2 rounded-xl py-2.5 px-3 text-sm sm:text-base font-black w-full flex items-center justify-center gap-1.5 transition`;
+                btn.innerHTML = `<span>${optName}</span>`;
+
+                btn.onclick = () => {
+                    checkAnswer(player, optName, btn);
+                };
+
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(player, chosenAnswer, btnEl) {
+            const current = gameState[player].currentQ;
+            if (!current) return;
+
+            const pState = gameState[player];
+            const isCorrect = (chosenAnswer === current.shapeName);
+
+            if (isCorrect) {
+                // CORRECT
+                playSound('correct');
+                pState.score += 100;
+                pState.combo += 1;
+
+                if (pState.combo >= 3) {
+                    playSound('bonus');
+                    pState.score += 50;
+                    triggerCelebrate(player);
+                }
+
+                btnEl.classList.remove('bg-white', 'hover:bg-pink-100', 'hover:bg-sky-100');
+                btnEl.classList.add('bg-green-500', 'text-white', 'border-green-600', 'scale-105');
+
+                setTimeout(() => {
+                    updateUI(player);
+                    nextQuestion(player);
+                }, 300);
+
+            } else {
+                // WRONG
+                playSound('wrong');
+                pState.score = Math.max(0, pState.score - 10);
+                pState.combo = 0;
+
+                btnEl.classList.remove('bg-white');
+                btnEl.classList.add('bg-red-500', 'text-white', 'border-red-600');
+
+                const cardContainer = document.getElementById(`${player}-card-container`);
+                cardContainer.classList.add('animate-shake');
+
+                setTimeout(() => {
+                    updateUI(player);
+                    nextQuestion(player);
+                }, 400);
+            }
+        }
+
+        function updateUI(player) {
+            const pState = gameState[player];
+            document.getElementById(`${player}-score`).textContent = pState.score;
+            
+            const comboEl = document.getElementById(`${player}-combo`);
+            const comboCount = document.getElementById(`${player}-combo-count`);
+
+            if (pState.combo >= 2) {
+                comboEl.classList.remove('hidden');
+                comboCount.textContent = pState.combo;
+            } else {
+                comboEl.classList.add('hidden');
+            }
+        }
+
+        function triggerCelebrate(player) {
+            const celEl = document.getElementById(`${player}-celebrate`);
+            celEl.classList.remove('opacity-0');
+            celEl.classList.add('opacity-100');
+            setTimeout(() => {
+                celEl.classList.remove('opacity-100');
+                celEl.classList.add('opacity-0');
+            }, 800);
+        }
+
+        function startGame(fullScreen = false) {
+            if (fullScreen) {
+                toggleFullScreen();
+            }
+
+            document.getElementById('start-modal').classList.add('hidden');
+            document.getElementById('gameover-modal').classList.add('hidden');
+
+            // Reset Game Variables
+            gameState.timer = 120;
+            gameState.isPlaying = true;
+            gameState.p1 = { score: 0, combo: 0, currentQ: null, deck: shuffle(QUESTION_POOL) };
+            gameState.p2 = { score: 0, combo: 0, currentQ: null, deck: shuffle(QUESTION_POOL) };
+
+            nextQuestion('p1');
+            nextQuestion('p2');
+
+            updateUI('p1');
+            updateUI('p2');
+
+            document.getElementById('timer-display').textContent = gameState.timer;
+
+            if (gameState.interval) clearInterval(gameState.interval);
+            gameState.interval = setInterval(() => {
+                gameState.timer--;
+                document.getElementById('timer-display').textContent = gameState.timer;
+
+                if (gameState.timer <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function endGame() {
+            clearInterval(gameState.interval);
+            gameState.isPlaying = false;
+
+            const p1 = gameState.p1.score;
+            const p2 = gameState.p2.score;
+
+            document.getElementById('final-p1-score').textContent = p1;
+            document.getElementById('final-p2-score').textContent = p2;
+
+            const winnerTitle = document.getElementById('winner-title');
+            const winnerEmoji = document.getElementById('winner-emoji');
+
+            if (p1 > p2) {
+                winnerTitle.textContent = "P1 玩家 1 獲勝！";
+                winnerTitle.className = "text-3xl font-black text-pink-600";
+                winnerEmoji.textContent = "👑";
+            } else if (p2 > p1) {
+                winnerTitle.textContent = "P2 玩家 2 獲勝！";
+                winnerTitle.className = "text-3xl font-black text-sky-600";
+                winnerEmoji.textContent = "👑";
+            } else {
+                winnerTitle.textContent = "平分秋色！兩位都是大師！";
+                winnerTitle.className = "text-3xl font-black text-purple-600";
+                winnerEmoji.textContent = "🤝";
+            }
+
+            document.getElementById('gameover-modal').classList.remove('hidden');
+        }
+
+        function restartGame() {
+            startGame(false);
+        }
+    </script>
+</body>
+</html>
